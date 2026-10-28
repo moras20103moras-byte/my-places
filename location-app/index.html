@@ -6,7 +6,9 @@
 <title>مواقعي</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<meta name="theme-color" content="#0B7A66">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#EEF2EF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0C1614" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="مواقعي">
@@ -14,7 +16,7 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<header><h1 id="ttl">مواقعي</h1><button class="ghost" data-act="backup" id="bk">النسخ الاحتياطي</button></header>
+<header><div class="brand"><img src="icons/icon-192.png" alt="" width="42" height="42"><h1 id="ttl">مواقعي</h1></div><button class="ghost" data-act="backup" id="bk">النسخ الاحتياطي</button></header>
 <main id="app"></main>
 <div id="toast" role="status"></div>
 <div id="modal" hidden></div>
