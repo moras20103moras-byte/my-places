@@ -31,10 +31,12 @@ async function share(p){
   const text=buildText(p);
   const files=p.photos.map((x,i)=>new File([x.blob],fname(p.name)+'-'+(i+1)+'.'+ext(x.type),{type:x.type||'image/jpeg'}));
   const canF=files.length&&navigator.canShare&&navigator.canShare({files});
+  const cp=files.length?copy(text):null;
+  const done=async()=>toast(files.length&&cp&&await cp?'تمت المشاركة. التفاصيل منسوخة: الصقها في خانة الرسالة إن لم تظهر.':'تمت المشاركة');
   try{
     if(!navigator.share)return fallback(p,text,files,'هذا المتصفح لا يدعم قائمة المشاركة.',canF);
     if(!files.length){await navigator.share({title:p.name,text});return toast('تمت المشاركة')}
-    if(canF&&navigator.canShare({files,text})){await navigator.share({title:p.name,text,files});return toast('تمت المشاركة')}
+    if(canF&&navigator.canShare({files,text})){await navigator.share({title:p.name,text,files});return done()}
     return fallback(p,text,files,'جهازك لا يدعم مشاركة النص والصور معًا في خطوة واحدة.',canF);
   }catch(e){
     if(e&&e.name==='AbortError')return;
@@ -84,7 +86,7 @@ function detail(p){
   clean();title('تفاصيل الموقع',1);
   const rows=(p.mapUrl?'<p><b>رابط Google Maps</b><a href="'+esc(p.mapUrl)+'" target="_blank" rel="noopener" dir="ltr">فتح في الخرائط</a></p>':'')+
     FIELDS.filter(f=>(p[f[0]]||'').trim()).map(f=>'<p><b>'+f[1]+'</b>'+esc(p[f[0]])+'</p>').join('');
-  app.innerHTML='<h2>'+esc(p.name)+'</h2><div class="stack"><button class="big sec" data-act="copy" data-id="'+p.id+'">نسخ التفاصيل</button><button class="big" data-act="share" data-id="'+p.id+'">مشاركة التفاصيل والصور</button></div>'+
+  app.innerHTML='<h2>'+esc(p.name)+'</h2><div class="stack"><button class="big sec" data-act="copy" data-id="'+p.id+'">نسخ التفاصيل</button><button class="big" data-act="share" data-id="'+p.id+'">مشاركة التفاصيل والصور</button><button class="big sec" data-act="txt" data-id="'+p.id+'">مشاركة النص فقط</button></div>'+
    (rows?'<div class="kv">'+rows+'</div>':'')+
    (p.photos.length?'<h3>الصور</h3><div class="grid">'+p.photos.map((x,i)=>'<div class="ph" role="button" data-act="view" data-i="'+i+'" data-id="'+p.id+'" style="background-image:url('+U(x.blob)+')"></div>').join('')+'</div>':'')+
    '<p class="note">أنشئ: '+fmt(p.created)+' - آخر تعديل: '+fmt(p.updated)+'</p><div class="row"><button class="sec" data-act="edit" data-id="'+p.id+'">تعديل</button><button class="danger" data-act="del" data-id="'+p.id+'">حذف</button></div><p></p><button class="ghost big" data-act="home">رجوع للقائمة</button>';
@@ -156,7 +158,7 @@ async function importZip(f){
 const byId=id=>places.find(p=>p.id===id);
 const H={
   home,add:()=>form(),backup:backupView,cancel:()=>draft&&!draft.isNew&&byId(draft.id)?detail(byId(draft.id)):home(),
-  open:id=>detail(byId(id)),copy:id=>doCopy(byId(id)),share:id=>share(byId(id)),edit:id=>form(byId(id)),
+  open:id=>detail(byId(id)),copy:id=>doCopy(byId(id)),txt:async id=>{const p=byId(id);try{if(!navigator.share)return doCopy(p);await navigator.share({title:p.name,text:buildText(p)})}catch(e){if(!e||e.name!=='AbortError')toast('تعذرت المشاركة.',1)}},share:id=>share(byId(id)),edit:id=>form(byId(id)),
   del:async id=>{const p=byId(id);if(!confirm('حذف «'+p.name+'» مع صوره؟ لا يمكن التراجع.'))return;try{await DB.del(id);places=places.filter(x=>x.id!==id);home();toast('تم الحذف')}catch(e){toast('تعذر الحذف.',1)}},
   view:(id,b)=>viewer(byId(id),+b.dataset.i),save,pick:()=>$('#pick').click(),cam:()=>$('#cam').click(),
   pd:(id,b)=>{sync();draft.photos.splice(+b.dataset.i,1);pg()},
