@@ -15,10 +15,17 @@ const clean=()=>{urls.forEach(u=>URL.revokeObjectURL(u));urls=[]};
 function toast(m,err){const t=$('#toast');t.textContent=m;t.className='on'+(err?' err':'');clearTimeout(tt);tt=setTimeout(()=>t.className='',3200)}
 function title(t,back){$('#ttl').textContent=t;$('#bk').hidden=!!back}
 function buildText(p){
-  const L=['اسم الموقع: '+p.name];
-  if((p.mapUrl||'').trim())L.push('رابط الموقع:\n'+p.mapUrl.trim());
-  for(const f of FIELDS){const v=(p[f[0]]||'').trim();if(v)L.push(LABELS[f[0]]+': '+v)}
-  return L.join('\n\n');
+  const L=[p.name];
+  if((p.mapUrl||'').trim())L.push(p.mapUrl.trim());
+  const V=k=>(p[k]||'').trim();
+  const D=[];
+  if(V('building'))D.push(V('building'));
+  if(V('floor'))D.push('الدور: '+V('floor'));
+  if(V('unit'))D.push('الشقة: '+V('unit'));
+  if(V('entrance'))D.push(V('entrance'));
+  if(V('access'))D.push(V('access'));
+  if(V('notes'))D.push(V('notes'));
+  return L.join('\n')+(D.length?'\n\n'+D.join('\n'):'');
 }
 async function copy(text){
   try{await navigator.clipboard.writeText(text);return true}catch(e){}
@@ -42,6 +49,19 @@ async function share(p){
     if(e&&e.name==='AbortError')return;
     fallback(p,text,files,'تعذرت المشاركة ('+(e&&e.name||'خطأ')+').',canF);
   }
+}
+function shareMenu(p){
+  if(!p.photos.length)return share(p);
+  const text=buildText(p);
+  const files=p.photos.map((x,i)=>new File([x.blob],fname(p.name)+'-'+(i+1)+'.'+ext(x.type),{type:x.type||'image/jpeg'}));
+  const canF=navigator.canShare&&navigator.canShare({files});
+  sheet('<div class="box"><b>اختر طريقة الإرسال</b><p class="note">واتساب وبعض التطبيقات تتجاهل النص عند إرسال الصور معًا، والأضمن إرسالهما بخطوتين. ابقَ على هذه الشاشة بين الخطوتين.</p><button data-k="txt">1) مشاركة النص</button>'+(canF?'<button data-k="img">2) مشاركة الصور ('+files.length+')</button>':'')+'<button class="sec" data-k="all">مشاركة النص والصور معًا</button><button class="ghost" data-k="x">إغلاق</button></div>',async k=>{
+    try{
+      if(k==='txt'){if(!navigator.share)return doCopy(p);await navigator.share({title:p.name,text})}
+      else if(k==='img')await navigator.share({files});
+      else if(k==='all'){closeSheet();share(p)}
+    }catch(e){if(!e||e.name!=='AbortError')toast('تعذرت المشاركة.',1)}
+  });
 }
 function fallback(p,text,files,why,canF){
   sheet('<div class="box"><b>'+esc(why)+'</b><p class="note">اختر طريقة بديلة:</p><button data-k="copy">نسخ النص</button>'+
@@ -158,7 +178,7 @@ async function importZip(f){
 const byId=id=>places.find(p=>p.id===id);
 const H={
   home,add:()=>form(),backup:backupView,cancel:()=>draft&&!draft.isNew&&byId(draft.id)?detail(byId(draft.id)):home(),
-  open:id=>detail(byId(id)),copy:id=>doCopy(byId(id)),txt:async id=>{const p=byId(id);try{if(!navigator.share)return doCopy(p);await navigator.share({title:p.name,text:buildText(p)})}catch(e){if(!e||e.name!=='AbortError')toast('تعذرت المشاركة.',1)}},share:id=>share(byId(id)),edit:id=>form(byId(id)),
+  open:id=>detail(byId(id)),copy:id=>doCopy(byId(id)),txt:async id=>{const p=byId(id);try{if(!navigator.share)return doCopy(p);await navigator.share({title:p.name,text:buildText(p)})}catch(e){if(!e||e.name!=='AbortError')toast('تعذرت المشاركة.',1)}},share:id=>shareMenu(byId(id)),edit:id=>form(byId(id)),
   del:async id=>{const p=byId(id);if(!confirm('حذف «'+p.name+'» مع صوره؟ لا يمكن التراجع.'))return;try{await DB.del(id);places=places.filter(x=>x.id!==id);home();toast('تم الحذف')}catch(e){toast('تعذر الحذف.',1)}},
   view:(id,b)=>viewer(byId(id),+b.dataset.i),save,pick:()=>$('#pick').click(),cam:()=>$('#cam').click(),
   pd:(id,b)=>{sync();draft.photos.splice(+b.dataset.i,1);pg()},
