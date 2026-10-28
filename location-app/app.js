@@ -15,17 +15,16 @@ const clean=()=>{urls.forEach(u=>URL.revokeObjectURL(u));urls=[]};
 function toast(m,err){const t=$('#toast');t.textContent=m;t.className='on'+(err?' err':'');clearTimeout(tt);tt=setTimeout(()=>t.className='',3200)}
 function title(t,back){$('#ttl').textContent=t;$('#bk').hidden=!!back}
 function buildText(p){
-  const L=[p.name];
-  if((p.mapUrl||'').trim())L.push(p.mapUrl.trim());
   const V=k=>(p[k]||'').trim();
   const D=[];
+  if(V('mapUrl'))D.push(V('mapUrl'));
   if(V('building'))D.push(V('building'));
   if(V('floor'))D.push('الدور: '+V('floor'));
   if(V('unit'))D.push('الشقة: '+V('unit'));
   if(V('entrance'))D.push(V('entrance'));
   if(V('access'))D.push(V('access'));
   if(V('notes'))D.push(V('notes'));
-  return L.join('\n')+(D.length?'\n\n'+D.join('\n'):'');
+  return D.length?D.join('\n\n'):p.name;
 }
 async function copy(text){
   try{await navigator.clipboard.writeText(text);return true}catch(e){}
